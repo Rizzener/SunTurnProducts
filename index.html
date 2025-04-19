@@ -19,14 +19,38 @@
         	scrollbar-width: none;     /* Firefox */
         }
 
-
 		@keyframes fadeIn {
 			from { opacity: 0; transform: translateX(20px); }
 			to { opacity: 1; transform: translateX(0); }
 		}
+        
         #sidebar {
-            position: relative;
-            overflow: hidden;
+            position: fixed;
+            width: 260px;
+            height: 100vh;
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        @media (min-width: 769px) {
+            #sidebar {
+                transform: translateX(0);
+                position: fixed;
+            }
+            
+            #main-content {
+                margin-left: 260px !important;
+                padding-left: 1.5rem !important;
+            }
+            
+            .mobile-menu-btn {
+                display: none !important;
+            }
+        }
+        
+        #sidebar.open {
+            transform: translateX(0);
         }
 
         #sidebar ul {
@@ -35,10 +59,7 @@
             padding-right: 8px;
         }
 
-        #sidebar::-webkit-scrollbar {
-            display: none;
-        }
-
+        #sidebar::-webkit-scrollbar,
         #sidebar ul::-webkit-scrollbar {
             display: none;
         }
@@ -50,6 +71,49 @@
             right: 0;
             padding: 1rem;
         }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 30;
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            #main-content {
+                margin-left: 0 !important;
+                padding: 1rem !important;
+                padding-top: 4rem !important;
+            }
+        }
+
 		.dropdown {
 			position: absolute;
 			display: none;
@@ -99,9 +163,18 @@
 	</style>
 </head>
 <body class="flex min-h-screen overflow-hidden">
+    <!-- Mobile menu button -->
+    <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+    
+    <!-- Overlay for mobile menu -->
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
 	<!-- Sidebar -->
-	<aside id="sidebar" class="transition-width w-72 bg-zinc-900 p-4 border-r border-zinc-800 relative">
+	<aside id="sidebar" class="bg-zinc-900 p-4 border-r border-zinc-800 relative">
 		<h2 class="text-xl font-bold mb-4 flex items-center gap-2">
         	<img src="./files/assets/logo.png" alt="Logo" class="w-6 h-6">
         	SunTurnProducts
@@ -117,7 +190,7 @@
 	</aside>
 
 	<!-- Content -->
-	<main id="main-content" class="flex-1 p-6 pl-4 transition-all duration-300 ease-in-out overflow-hidden" style="margin-left: 0">
+	<main id="main-content" class="flex-1 p-6 transition-all duration-300 ease-in-out overflow-hidden" style="margin-left: 0">
         <div id="main-scroll" class="h-full overflow-y-auto pr-2" style="max-height: calc(100vh - 48px);">
             <div class="text-zinc-400 text-left mt-12 text-xl">Выберите мод из списка слева</div>
         </div>
@@ -157,118 +230,138 @@
 			}
 		};
 
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
         function setupModButtons() {
             const modList = document.getElementById('mod-list');
             modList.innerHTML = '';
-                
+
             Object.keys(modData).forEach(modKey => {
                 const mod = modData[modKey];
                 const li = document.createElement('li');
                 li.classList.add('cursor-pointer', 'px-3', 'py-2', 'rounded-lg', 'hover:bg-zinc-800', 'transition');
                 li.setAttribute('data-mod', modKey);
                 li.innerHTML = `${mod.icon} ${mod.name}`;
-                li.onclick = () => renderMod(mod);
-            
+                li.onclick = () => {
+                    renderMod(modKey);
+                    if (window.innerWidth <= 768) {
+                        toggleSidebar();
+                    }
+                };
+
                 modList.appendChild(li);
             });
         }
-        
+
+        function renderMod(modKey) {
+            const mod = modData[modKey];
+            const container = document.getElementById('main-scroll');
+
+            const version = mod.currentVersion;
+            const versionDropdownId = `${mod.name}-dropdown`;
+            const files = mod.files[version] || {};
+
+            container.innerHTML = `
+                <div class="max-w-3xl fade-in relative mx-auto" style="margin-left: 0">
+                    <h1 class="text-2xl md:text-3xl font-bold mb-2 relative">
+                        ${mod.icon} ${mod.name}
+                        <div class="inline-block relative">
+                            <span id="${versionDropdownId}" class="version-select" onclick="toggleDropdown('${mod.name}')">
+                                v${version}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                            <div id="${versionDropdownId}-menu" class="dropdown absolute left-0 top-full mt-1">
+                                ${mod.versions.map(v => `
+                                    <div class="dropdown-item" onclick="selectVersion('${mod.name}', '${v}')">
+                                        v${v}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </h1>
+                    <p class="text-zinc-300 mb-6">${mod.description}</p>
+                    <div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3">
+                        <h2 class="text-xl font-semibold">Скачать (v${version})</h2>
+                        ${Object.entries(files).map(([ver, url], index) => `
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between ${index !== 0 ? 'border-t border-zinc-800 pt-2 mt-2' : ''}">
+                                <span class="mb-2 sm:mb-0">${ver}</span>
+                                <a href="${url}" class="bg-zinc-800 px-4 py-2 rounded-xl hover:bg-zinc-700 transition text-center block sm:inline-block" download>Скачать</a>
+                            </div>
+                        `).join('') || `<div class="text-zinc-500 italic">Нет доступных файлов для этой версии</div>`}
+                    </div>
+                    <div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3 mt-6">
+                        <h2 class="text-xl font-semibold">ChangeLog (v${version})</h2>
+                        ${mod.changelog?.[version].map((entry, index) => `
+                            <div class="flex items-start gap-2 ${index !== 0 ? 'border-t border-zinc-800 pt-2 mt-2' : ''}">
+                                <span class="text-indigo-500">•</span>
+                                <span>${entry}</span>
+                            </div>
+                        `).join('') || `<div class="text-zinc-500 italic">Нет изменений для этой версии</div>`}
+                    </div>
+                </div>
+            `;
+
+            setupModButtons();
+
+            window.location.hash = modKey;
+        }
+
+        function selectVersion(modName, version) {
+            modData[modName].currentVersion = version;
+            renderMod(modName);
+        }
+
+        function toggleDropdown(modName) {
+            const dropdown = document.getElementById(`${modName}-dropdown-menu`);
+            const button = document.getElementById(`${modName}-dropdown`);
+            const isOpen = dropdown.classList.contains('open');
+
+            document.querySelectorAll('.dropdown').forEach(el => el.classList.remove('open'));
+            document.querySelectorAll('.version-select').forEach(el => el.classList.remove('open'));
+
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                button.classList.add('open');
+            }
+        }
+
+        function handleOutsideClick(e) {
+            const openDropdown = document.querySelector('.dropdown.open');
+            const openButton = document.querySelector('.version-select.open');
+            if (
+                openDropdown && !openDropdown.contains(e.target) &&
+                openButton && !openButton.contains(e.target)
+            ) {
+                openDropdown.classList.remove('open');
+                openButton.classList.remove('open');
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             setupModButtons();
+            document.getElementById('mobile-menu-btn').addEventListener('click', toggleSidebar);
             document.addEventListener('click', handleOutsideClick);
+
+            const modKey = window.location.hash.slice(1);
+            if (modKey && modData[modKey]) {
+                renderMod(modKey);
+            }
+            
+            // Close sidebar when resizing to desktop
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('overlay').classList.remove('open');
+                }
+            });
         });
-
-		function renderMod(mod) {
-			const container = document.getElementById('main-scroll');
-
-			const version = mod.currentVersion;
-			const versionDropdownId = `${mod.name}-dropdown`;
-			const files = mod.files[version] || {};
-
-			container.innerHTML = `
-				<div class="max-w-3xl fade-in relative">
-					<h1 class="text-3xl font-bold mb-2 relative">
-						${mod.icon} ${mod.name}
-						<div class="inline-block relative">
-							<span id="${versionDropdownId}" class="version-select" onclick="toggleDropdown('${mod.name}')">
-								v${version}
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								</svg>
-							</span>
-							<div id="${versionDropdownId}-menu" class="dropdown absolute left-0 top-full mt-1">
-								${mod.versions.map(v => `
-									<div class="dropdown-item" onclick="selectVersion('${mod.name}', '${v}')">
-										v${v}
-									</div>
-								`).join('')}
-							</div>
-						</div>
-					</h1>
-					<p class="text-zinc-300 mb-6">${mod.description}</p>
-                    <div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3">
-						<h2 class="text-xl font-semibold">Скачать (v${version})</h2>
-						${
-							Object.entries(files).map(([ver, url], index) => `
-								<div class="flex items-center justify-between ${index !== 0 ? 'border-t border-zinc-800 pt-2 mt-2' : ''}">
-									<span>${ver}</span>
-									<a href="${url}" class="bg-zinc-800 px-4 py-2 rounded-xl hover:bg-zinc-700 transition" download>Скачать</a>
-								</div>
-							`).join('') || `<div class="text-zinc-500 italic">Нет доступных файлов для этой версии</div>`
-						}
-					</div>
-					<div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3 mt-6">
-						<h2 class="text-xl font-semibold">ChangeLog (v${version})</h2>
-						${
-							(mod.changelog?.[version] || []).map((entry, index) => `
-								<div class="flex items-start gap-2 ${index !== 0 ? 'border-t border-zinc-800 pt-2 mt-2' : ''}">
-									<span class="text-indigo-500">•</span>
-									<span>${entry}</span>
-								</div>
-							`).join('') || `<div class="text-zinc-500 italic">Нет изменений для этой версии</div>`
-						}
-					</div>
-				</div>
-			`;
-
-			setupModButtons();
-		}
-
-		function selectVersion(modName, version) {
-			modData[modName].currentVersion = version;
-			renderMod(modData[modName]);
-		}
-
-		function toggleDropdown(modName) {
-			const dropdown = document.getElementById(`${modName}-dropdown-menu`);
-			const button = document.getElementById(`${modName}-dropdown`);
-			const isOpen = dropdown.classList.contains('open');
-
-			document.querySelectorAll('.dropdown').forEach(el => el.classList.remove('open'));
-			document.querySelectorAll('.version-select').forEach(el => el.classList.remove('open'));
-
-			if (!isOpen) {
-				dropdown.classList.add('open');
-				button.classList.add('open');
-			}
-		}
-
-		function handleOutsideClick(e) {
-			const openDropdown = document.querySelector('.dropdown.open');
-			const openButton = document.querySelector('.version-select.open');
-			if (
-				openDropdown && !openDropdown.contains(e.target) &&
-				openButton && !openButton.contains(e.target)
-			) {
-				openDropdown.classList.remove('open');
-				openButton.classList.remove('open');
-			}
-		}
-
-		window.addEventListener('DOMContentLoaded', () => {
-			setupModButtons();
-			document.addEventListener('click', handleOutsideClick);
-		});
 	</script>
 </body>
 </html>
