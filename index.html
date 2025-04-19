@@ -211,7 +211,15 @@
 				},
 				changelog: {
 					"1.0": ["Начальная версия"]
-				}
+				},
+                screenshots: {
+                    "1.0": {
+                        "Без мода": "./files/screenshots/SunTurnShowHitBoxes/1.0/without_mod.png",
+                        "С модом": "./files/screenshots/SunTurnShowHitBoxes/1.0/with_mod.png",
+                        "Настройка \"Показывать голых\"": "./files/screenshots/SunTurnShowHitBoxes/1.0/with_mod_and_show_naked.png",
+                        "Конфиг": "./files/screenshots/SunTurnShowHitBoxes/1.0/config.png"
+                    }
+                }
 			},
 			SunTurnModsButton: {
 				icon: "🧩",
@@ -226,6 +234,12 @@
 				},
                 changelog: {
                     "1.0": ["Начальная версия"]
+                },
+                screenshots: {
+                    "1.0": {
+                        "До": "./files/screenshots/SunTurnModsButton/1.0/before.png",
+                        "После": "./files/screenshots/SunTurnModsButton/1.0/after.png"
+                    }
                 }
 			}
 		};
@@ -305,6 +319,26 @@
                             </div>
                         `).join('') || `<div class="text-zinc-500 italic">Нет изменений для этой версии</div>`}
                     </div>
+                    ${mod.screenshots?.[version]
+                    ? `
+                    <div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3 mt-6">
+                        <h2 class="text-xl font-semibold">Скриншоты (v${version})</h2>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            ${Object.entries(mod.screenshots[version]).map(([label, path]) => `
+                                <div class="space-y-2">
+                                    <div class="text-sm text-zinc-400">${label}</div>
+                                    <img src="${path}" alt="${label}" class="w-full rounded-lg border border-zinc-800">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    `
+                    : `
+                    <div class="bg-zinc-900 p-4 border border-zinc-800 rounded-xl space-y-3 mt-6">
+                        <h2 class="text-xl font-semibold">Скриншоты (v${version})</h2>
+                        <div class="text-zinc-500 italic">Скриншоты отсутствуют для этой версии</div>
+                    </div>
+                    `}
                 </div>
             `;
 
