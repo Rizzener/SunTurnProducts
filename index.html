@@ -14,11 +14,10 @@
         #main-scroll::-webkit-scrollbar {
         	display: none;
         }
+
         #main-scroll {
             -ms-overflow-style: none;  /* IE and Edge */
         	scrollbar-width: none;     /* Firefox */
-            padding-top: 2.5rem;
-            padding-bottom: 1rem;
         }
 
 		@keyframes fadeIn {
@@ -113,6 +112,11 @@
                 margin-left: 0 !important;
                 padding: 1rem !important;
                 padding-top: 4rem !important;
+            }
+
+            #main-scroll {
+                padding-bottom: 1rem;
+                padding-top: 2.5rem;
             }
         }
 
